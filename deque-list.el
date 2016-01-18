@@ -1,0 +1,71 @@
+(require 'cl-lib)
+(require 'eieio)
+(require 'deque)
+(defclass deque-list (deque)
+  ((content :initform nil :initarg :content :protection :protected)))
+
+(defmethod deque-append ((deque-object deque-list) &rest elements)
+  (setf (deque-content deque-object)
+        (append (deque-content deque-object) elements))
+  deque-object)
+
+(defmethod deque-append-left ((deque-object deque-list) &rest elements)
+  (setf (deque-content deque-object)
+        (append elements (deque-content deque-object)))
+  deque-object)
+
+(defmethod deque-clear ((deque-object deque-list))
+  (setf (deque-content deque-object) nil)
+  deque-object)
+
+(defmethod deque-count ((deque-object deque-list) value)
+  (cl-count value (deque-content deque-object)))
+
+(defmethod deque-extend ((deque-object deque-list) seq)
+  (apply #'deque-append deque-object (mapcar 'identity seq)))
+
+(defmethod deque-extend-left ((deque-object deque-list) seq)
+  (apply #'deque-append-left deque-object (mapcar 'identity seq)))
+
+(defmethod deque-empty-p ((deque-object deque-list))
+  (null (deque-content deque-object)))
+
+(defmethod deque-pop ((deque-object deque-list))
+  (when (deque-empty-p deque-object)
+    (error "empty deque"))
+  (let ((last (last (deque-content deque-object))))
+    (setf (deque-content deque-object) (nbutlast (deque-content deque-object)))
+    (car last)))
+
+(defmethod deque-pop-left ((deque-object deque-list))
+  (when (deque-empty-p deque-object)
+    (error "empty deque"))
+  (pop (deque-content deque-object)))
+
+(defmethod deque-remove ((deque-object deque-list) value)
+  (cl-labels ((remove-first (l v)
+                            (cond ((null l)
+                                   l)
+                                  ((equal (car l) v)
+                                   (cdr l))
+                                  (t
+                                   (cons (car l) (remove-first (cdr l) v))))))
+    (setf (deque-content deque-object)
+          (remove-first (deque-content deque-object) value))
+    deque-object))
+
+(defmethod deque-reverse ((deque-object deque-list))
+  (setf (deque-content deque-object)
+        (nreverse (deque-content deque-object)))
+  deque-object)
+
+(defmethod deque-rotate ((deque-object deque-list) &optional n)
+  (let* ((content (deque-content deque-object))
+         (content-length (length content))
+         (n (mod (+ (or n 1) content-length)
+                 content-length))
+         (head (butlast content n))
+         (tail (last content n)))
+    (setf (deque-content deque-object)
+          (append tail head)))
+  deque-object)
